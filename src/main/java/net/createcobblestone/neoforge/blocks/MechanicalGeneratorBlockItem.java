@@ -3,7 +3,6 @@ package net.createcobblestone.neoforge.blocks;
 import net.createcobblestone.neoforge.data.GeneratorType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.world.entity.player.Player;
@@ -22,14 +21,8 @@ public class MechanicalGeneratorBlockItem extends BlockItem {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.@NotNull TooltipContext context, @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
-        CustomData beData = stack.get(DataComponents.BLOCK_ENTITY_DATA);
-        Item generatedItem = GeneratorType.NONE.getItem();
-        if (beData == null) {
-            GeneratorType.NONE.writeToItemStack(stack);
-        }else {
-            generatedItem = GeneratorType.fromCompoundTag(beData.copyTag()).getItem();
-        }
+    public void appendHoverText(@NotNull ItemStack stack, Item.@NotNull TooltipContext context, @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
+        Item generatedItem = GeneratorType.fromStack(stack).getItem();
 
         if (generatedItem != Items.AIR) {
             tooltipComponents.add(

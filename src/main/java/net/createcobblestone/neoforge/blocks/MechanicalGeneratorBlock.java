@@ -66,7 +66,7 @@ public class MechanicalGeneratorBlock extends HorizontalKineticBlock implements 
     public @NotNull ItemInteractionResult useItemOn(@NotNull ItemStack stack, @NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull Player player, @NotNull InteractionHand hand, @NotNull BlockHitResult hitResult) {
         super.useItemOn(stack, state, level, pos, player, hand, hitResult);
         try {
-            GeneratorType type = GeneratorType.fromItem(player.getMainHandItem().getItem());
+            GeneratorType type = GeneratorType.fromStack(player.getMainHandItem());
 
             if (type.getBlock() == null || type == GeneratorType.NONE || !Config.common().isEnabled(type)) {
                 return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;

@@ -1,5 +1,6 @@
 package net.createcobblestone.neoforge.data;
 
+import net.createcobblestone.neoforge.CreateCobblestoneNeoForge;
 import net.createcobblestone.neoforge.index.Config;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -14,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-import static com.mojang.text2speech.Narrator.LOGGER;
+import static net.createcobblestone.neoforge.CreateCobblestoneNeoForge.LOGGER;
 import static net.createcobblestone.neoforge.index.Blocks.MECHANICAL_GENERATOR_BLOCK;
 
 public class GeneratorType {
@@ -90,6 +91,11 @@ public class GeneratorType {
         return id;
     }
 
+    public ResourceLocation getIdAsRL() {
+        if (id.indexOf(':') < 0) return CreateCobblestoneNeoForge.asResource("generator_types/" + id);
+        return ResourceLocation.parse(id);
+    }
+
     public Block getBlock() throws NullPointerException {
         return BuiltInRegistries.BLOCK.get(block);
     }
@@ -157,6 +163,32 @@ public class GeneratorType {
         return Objects.requireNonNullElse(byItemKey, NONE);
     }
 
+    public static @NotNull GeneratorType fromStack(ItemStack stack) {
+        // 1) new component
+        GeneratorTypeComponent comp = stack.get(GeneratorComponents.GENERATOR_TYPE.value());
+        if (comp != null) {
+            // Decode to your in-memory type. We store RLs like createcobblestone:generator_types/...
+            String key = comp.typeId().toString();
+            // Support both full path and normalized id (e.g., "cobblestone"):
+            GeneratorType found = ID_TO_TYPE.get(key);
+            if (found != null) return found;
+
+            // Try normalized piece (".../cobblestone")
+            String path = comp.typeId().getPath();
+            int slash = path.lastIndexOf('/');
+            String tail = (slash >= 0) ? path.substring(slash + 1) : path;
+            GeneratorType byTail = ID_TO_TYPE.get(normalizeId(tail));
+            if (byTail != null) return byTail;
+        }
+
+        // 2) legacy: BLOCK_ENTITY_DATA with CustomData { id, type }
+        GeneratorType migrated = tryMigrateLegacy(stack);
+        if (migrated != null) return migrated;
+
+        // 3) last-resort by item/block
+        return fromItem(stack.getItem());
+    }
+
     public static List<GeneratorType> getTypes() {
         return List.copyOf(ID_TO_TYPE.values());
     }
@@ -166,10 +198,17 @@ public class GeneratorType {
         tag.putString("type", id);
     }
 
-    public void writeToItemStack(ItemStack stack) {
+    public void writeLegacyNBTToStack(ItemStack stack) {
         CompoundTag tag = new CompoundTag();
         writeToCompoundTag(tag);
         stack.set(DataComponents.BLOCK_ENTITY_DATA, CustomData.of(tag));
+    }
+
+    public void writeToItemStack(ItemStack stack) {
+        stack.set(
+                GeneratorComponents.GENERATOR_TYPE.value(),
+                new GeneratorTypeComponent(getIdAsRL())
+        );
     }
 
     private static String normalizeId(String id) {
@@ -179,5 +218,21 @@ public class GeneratorType {
         return id.toLowerCase(Locale.ROOT);
     }
 
+    private static GeneratorType tryMigrateLegacy(ItemStack stack) {
+        CustomData beData = stack.get(DataComponents.BLOCK_ENTITY_DATA);
+        if (beData == null) return null;
 
+        CompoundTag tag = beData.copyTag();
+
+        String legacyType = tag.getString("type");
+        if (legacyType.isEmpty()) return null;
+
+        GeneratorType type = fromId(legacyType);
+        // Write forward-compatible component and clear the legacy data
+        stack.set(GeneratorComponents.GENERATOR_TYPE.value(), new GeneratorTypeComponent(type.getIdAsRL()));
+        // (Optional) remove old payload to avoid duplication:
+        stack.remove(DataComponents.BLOCK_ENTITY_DATA);
+
+        return type;
+    }
 }

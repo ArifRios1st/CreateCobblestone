@@ -2,11 +2,11 @@ package net.createcobblestone.neoforge;
 
 import com.simibubi.create.foundation.data.CreateRegistrate;
 import net.createcobblestone.neoforge.blocks.MechanicalGeneratorBlockEntity;
+import net.createcobblestone.neoforge.data.GeneratorComponents;
 import net.createcobblestone.neoforge.data.GeneratorTypeLoader;
 import net.createcobblestone.neoforge.data.provider.MechanicalGeneratorLootTableProvider;
 import net.createcobblestone.neoforge.data.provider.MechanicalGeneratorRecipeProvider;
 import net.createcobblestone.neoforge.data.GeneratorTypesPayload;
-import net.createcobblestone.neoforge.data.ResourceReloadListener;
 import net.createcobblestone.neoforge.index.*;
 import net.createcobblestone.neoforge.index.Config;
 import net.minecraft.resources.ResourceLocation;
@@ -15,7 +15,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 
 import net.neoforged.bus.api.IEventBus;
@@ -47,6 +46,7 @@ public class CreateCobblestoneNeoForge {
         Config.register(modContainer);
         Blocks.register(); // hold registrate in a separate class to avoid loading early on forge
         BlockEntities.register();
+        GeneratorComponents.register(eventBus);
         GeneratorTypeLoader.register();
         eventBus.register(CreateCobblestoneNeoForge.class);
     }
